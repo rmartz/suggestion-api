@@ -1,0 +1,4 @@
+# Suggestion API
+This project represents the back-end logic for configuring sets of potential options (Called categories), and allowing users to create sessions to be offered suggestions and vote yes/no on the offered suggestions. A user's votes will be used to correlate with past sessions, and options common in sessions that have a high correlation with the user's voting will be suggested with a higher preference.
+
+The goal is to help a user discover new options they might not consciously consider, and so the suggestions should work to present options that have the greatest increase in relevance compared to a no-knowledge base state. The options suggested are intended to be ones that would the least likely chosen generally, but are expected to be sufficiently likely to be chosen by this user in this session.
