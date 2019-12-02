@@ -1,0 +1,11 @@
+language: python
+
+branches:
+  only:
+  - master
+
+services:
+  - docker
+
+script:
+  - ./scripts/test
