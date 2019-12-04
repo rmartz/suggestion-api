@@ -9,5 +9,8 @@ branches:
 services:
   - docker
 
+before_install:
+  - ./scripts/setup
+
 script:
   - ./scripts/test
