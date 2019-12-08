@@ -3,19 +3,32 @@ version: '3.7'
 services:
   web:
     build: ./app
+    image: suggestion-api:latest
     command: python manage.py runserver 0.0.0.0:8000
     volumes:
       - ./app/:/usr/src/app/
     ports:
       - 8000:8000
-    env_file:
-      - ./.env.dev
+    environment:
+      - DEBUG
+      - SECRET_KEY
+      - DJANGO_ALLOWED_HOSTS
+      - POSTGRES_DB
+      - POSTGRES_USER
+      - POSTGRES_PASSWORD
+      - POSTGRES_HOST=db
+      - POSTGRES_PORT=5432
   db:
     image: postgres:12.0-alpine
     volumes:
       - postgres_data:/var/lib/postgresql/data/
-    env_file:
-      - ./.env.dev
+    environment:
+      - DEBUG
+      - POSTGRES_DB
+      - POSTGRES_USER
+      - POSTGRES_PASSWORD
+      - POSTGRES_HOST=db
+      - POSTGRES_PORT=5432
 
 volumes:
   postgres_data:

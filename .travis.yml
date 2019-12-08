@@ -1,0 +1,16 @@
+language: python
+python:
+  - "3.8"
+
+branches:
+  only:
+  - master
+
+services:
+  - docker
+
+before_install:
+  - ./scripts/setup
+
+script:
+  - ./scripts/test
