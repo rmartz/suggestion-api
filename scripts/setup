@@ -1,1 +1,2 @@
+set -a && . .env
 docker build -f ./app/Dockerfile -t suggestion-api:latest ./app
