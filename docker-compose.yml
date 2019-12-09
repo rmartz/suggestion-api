@@ -9,6 +9,8 @@ services:
       - ./app/:/usr/src/app/
     ports:
       - 8000:8000
+    depends_on:
+      - db
     environment:
       - DEBUG
       - SECRET_KEY
