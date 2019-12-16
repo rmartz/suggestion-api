@@ -23,9 +23,10 @@ DEBUG = int(os.environ.get("DEBUG", default=0))
 # For example: 'DJANGO_ALLOWED_HOSTS=localhost 127.0.0.1 [::1]'
 ALLOWED_HOSTS = os.environ.get("DJANGO_ALLOWED_HOSTS").split(" ")
 
-INTERNAL_IPS = [
-    os.environ.get('DEBUG_HOST_ADDR'),
-]
+if DEBUG:
+    INTERNAL_IPS = [
+        os.environ.get('DEBUG_HOST_ADDR'),
+    ]
 
 # Application definition
 
