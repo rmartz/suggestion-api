@@ -1,2 +1,2 @@
 set -a && . .env
-docker-compose run web python manage.py $@
+docker-compose exec web python manage.py $@
