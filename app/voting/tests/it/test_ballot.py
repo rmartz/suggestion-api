@@ -43,7 +43,16 @@ class BallotTests(TestCase):
 
         test_label = 'Test ballot'
         url = reverse('ballot-detail', kwargs={'pk': ballot.id})
-        response = self.client.put(url, {'label': test_label})
+        response = self.client.patch(url, {'label': test_label})
+
+        self.assertEqual(response.status_code,
+                         status.HTTP_405_METHOD_NOT_ALLOWED)
+
+    def test_ballot__delete__prohibited(self):
+        ballot = BallotFactory.create()
+
+        url = reverse('ballot-detail', kwargs={'pk': ballot.id})
+        response = self.client.delete(url)
 
         self.assertEqual(response.status_code,
                          status.HTTP_405_METHOD_NOT_ALLOWED)
