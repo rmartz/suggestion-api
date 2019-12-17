@@ -5,5 +5,5 @@ from rest_framework import serializers
 class BallotOptionSerializer(serializers.ModelSerializer):
     class Meta:
         model = BallotOption
-        fields = ['label', 'ballot']
+        fields = ['id', 'label', 'ballot']
 

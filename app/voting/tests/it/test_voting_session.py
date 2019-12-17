@@ -3,6 +3,7 @@ from django.urls import reverse
 from rest_framework import status
 
 from voting.factories import VotingSessionFactory, BallotFactory
+from voting.models import VotingSession
 
 
 class VotingSessionTests(TestCase):
@@ -16,6 +17,7 @@ class VotingSessionTests(TestCase):
         json = response.json()
         self.assertIn('results', json)
         self.assertEqual(json['results'], [{
+            'id': voting_session.id,
             'ballot': voting_session.ballot.id
         }])
 
@@ -27,6 +29,7 @@ class VotingSessionTests(TestCase):
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.json(), {
+            'id': voting_session.id,
             'ballot': voting_session.ballot.id
         })
 
@@ -37,9 +40,10 @@ class VotingSessionTests(TestCase):
 
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
-        self.assertEqual(response.json(), {
-            'ballot': ballot.id
-        })
+        data = response.json()
+        self.assertIn('id', data)
+        vs = VotingSession.objects.get(id=data['id'])
+        self.assertEqual(vs.ballot, ballot)
 
     def test_voting_session__update__prohibited(self):
         voting_session = VotingSessionFactory.create()

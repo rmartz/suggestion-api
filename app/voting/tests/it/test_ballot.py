@@ -16,6 +16,7 @@ class BallotTests(TestCase):
         json = response.json()
         self.assertIn('results', json)
         self.assertEqual(json['results'], [{
+            'id': ballot.id,
             'label': ballot.label
         }])
 
@@ -27,6 +28,7 @@ class BallotTests(TestCase):
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.json(), {
+            'id': ballot.id,
             'label': ballot.label
         })
 
