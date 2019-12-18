@@ -1,5 +1,5 @@
 import factory
-from .models import Ballot, BallotOption, VotingSession, UserVote
+from .models import Ballot, BallotOption, Room, VotingSession, UserVote
 
 
 class BallotFactory(factory.django.DjangoModelFactory):
@@ -17,11 +17,18 @@ class BallotOptionFactory(factory.django.DjangoModelFactory):
     ballot = factory.SubFactory(BallotFactory)
 
 
+class RoomFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = Room
+
+    ballot = factory.SubFactory(BallotFactory)
+
+
 class VotingSessionFactory(factory.django.DjangoModelFactory):
     class Meta:
         model = VotingSession
 
-    ballot = factory.SubFactory(BallotFactory)
+    room = factory.SubFactory(RoomFactory)
 
 
 class UserVoteFactory(factory.django.DjangoModelFactory):

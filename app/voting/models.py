@@ -25,9 +25,14 @@ class BallotOption(ChangeTrackModel):
         unique_together = [['ballot', 'label']]
 
 
-class VotingSession(ChangeTrackModel):
+class Room(ChangeTrackModel):
     ballot = models.ForeignKey(Ballot,
                                on_delete=models.CASCADE)
+
+
+class VotingSession(ChangeTrackModel):
+    room = models.ForeignKey(Room,
+                             on_delete=models.CASCADE)
 
 
 class UserVote(ChangeTrackModel):
