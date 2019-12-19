@@ -1,9 +1,9 @@
-from django.test import TestCase, TransactionTestCase
+from django.test import TestCase
 from django.urls import reverse
 from rest_framework import status
 
 from voting.factories import RoomFactory, BallotFactory
-from voting.models import Room, Ballot, VotingSession
+from voting.models import Room
 
 
 class RoomTests(TestCase):
@@ -45,6 +45,12 @@ class RoomTests(TestCase):
         vs = Room.objects.get(id=data['id'])
         self.assertEqual(vs.ballot, ballot)
 
+    def test_room__create_invalid_ballot__error(self):
+        url = reverse('room-list')
+        response = self.client.post(url, {'ballot': 999})
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
     def test_room__update__prohibited(self):
         room = RoomFactory.create()
         new_ballot = BallotFactory.create()
@@ -64,35 +70,3 @@ class RoomTests(TestCase):
 
         self.assertEqual(response.status_code,
                          status.HTTP_405_METHOD_NOT_ALLOWED)
-
-
-class VotingSessionTests(TransactionTestCase):
-    def tearDown(self):
-        # These tests cannot be run in a transaction, as that prevents
-        # Postgres's IntegrityError from being noticed inside the request
-        # and instead happens when the transaction closes after the test.
-        # So, we have to be sure to clean up the DB between tests manually:
-        Ballot.objects.all().delete()
-
-    def test_join__valid__success(self):
-        room = RoomFactory.create()
-
-        url = reverse('room-join', kwargs={'pk': room.id})
-        response = self.client.post(url)
-
-        self.assertEqual(response.status_code,
-                         status.HTTP_201_CREATED)
-
-        data = response.json()
-        self.assertIn('token', data)
-
-        vs = VotingSession.objects.get(id=data['token'])
-        self.assertEqual(vs.room, room)
-
-    def test_join__invalid__prohibited(self):
-        url = reverse('room-join', kwargs={'pk': 999})
-        response = self.client.post(url)
-
-        self.assertEqual(response.status_code,
-                         status.HTTP_400_BAD_REQUEST)
-        self.assertQuerysetEqual(VotingSession.objects.all(), [])
