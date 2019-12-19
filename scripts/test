@@ -1,5 +1,6 @@
-set -a && . .env
 set -e
+
+test -f .env &&  set -a && . .env
 
 python3 -m flake8 app/
 
