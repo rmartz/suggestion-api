@@ -1,1 +1,7 @@
+set -e
+
+test -f .env &&  set -a && . .env
+
+python3 -m flake8 app/
+
 docker-compose run web python manage.py test
