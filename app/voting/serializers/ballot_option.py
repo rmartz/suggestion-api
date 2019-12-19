@@ -6,4 +6,3 @@ class BallotOptionSerializer(serializers.ModelSerializer):
     class Meta:
         model = BallotOption
         fields = ['id', 'label', 'ballot']
-
