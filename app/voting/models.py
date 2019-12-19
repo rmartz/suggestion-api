@@ -17,8 +17,10 @@ class Ballot(ChangeTrackModel):
 
 
 class BallotOption(ChangeTrackModel):
-    ballot = models.ForeignKey(Ballot,
-                               on_delete=models.CASCADE)
+    ballot = models.ForeignKey(
+        Ballot,
+        on_delete=models.CASCADE
+    )
     label = models.CharField(max_length=255)
 
     class Meta:
@@ -26,20 +28,28 @@ class BallotOption(ChangeTrackModel):
 
 
 class Room(ChangeTrackModel):
-    ballot = models.ForeignKey(Ballot,
-                               on_delete=models.CASCADE)
+    ballot = models.ForeignKey(
+        Ballot,
+        on_delete=models.CASCADE
+    )
 
 
 class VotingSession(ChangeTrackModel):
-    room = models.ForeignKey(Room,
-                             on_delete=models.CASCADE)
+    room = models.ForeignKey(
+        Room,
+        on_delete=models.CASCADE
+    )
 
 
 class UserVote(ChangeTrackModel):
-    session = models.ForeignKey(VotingSession,
-                                on_delete=models.CASCADE)
-    option = models.ForeignKey(BallotOption,
-                               on_delete=models.CASCADE)
+    session = models.ForeignKey(
+        VotingSession,
+        on_delete=models.CASCADE
+    )
+    option = models.ForeignKey(
+        BallotOption,
+        on_delete=models.CASCADE
+    )
     polarity = models.BooleanField()
 
     class Meta:
