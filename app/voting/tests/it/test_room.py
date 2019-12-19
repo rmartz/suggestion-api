@@ -7,19 +7,11 @@ from voting.models import Room
 
 
 class RoomTests(TestCase):
-    def test_room__list__success(self):
-        room = RoomFactory.create()
-
+    def test_room__list__prohibited(self):
         url = reverse('room-list')
         response = self.client.get(url)
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        json = response.json()
-        self.assertIn('results', json)
-        self.assertEqual(json['results'], [{
-            'id': room.id,
-            'ballot': room.ballot.id
-        }])
+        self.assertEqual(response.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
 
     def test_room__get__success(self):
         room = RoomFactory.create()
