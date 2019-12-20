@@ -6,14 +6,19 @@ class BallotFactory(factory.django.DjangoModelFactory):
     class Meta:
         model = Ballot
 
-    label = 'Test Ballot'
+    @factory.sequence
+    def label(n):
+        return f'Test Ballot {n}'
 
 
 class BallotOptionFactory(factory.django.DjangoModelFactory):
     class Meta:
         model = BallotOption
 
-    label = 'Test Ballot Option'
+    @factory.sequence
+    def label(n):
+        return f'Test Ballot Option {n}'
+
     ballot = factory.SubFactory(BallotFactory)
 
 
@@ -38,6 +43,6 @@ class UserVoteFactory(factory.django.DjangoModelFactory):
     session = factory.SubFactory(VotingSessionFactory)
     option = factory.SubFactory(
         BallotOptionFactory,
-        ballot=factory.SelfAttribute('session.ballot')
+        ballot=factory.SelfAttribute('..session.room.ballot')
     )
     polarity = False
