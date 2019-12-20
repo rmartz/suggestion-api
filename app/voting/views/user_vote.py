@@ -9,21 +9,19 @@ class UserVoteViewSet(viewsets.ModelViewSet):
     queryset = UserVote.objects.all().order_by('-created')
     serializer_class = UserVoteSerializer
 
-    def get_queryset(self):
-        queryset = self.queryset
-
+    def get_voting_session_token(self):
         token = self.request.query_params.get('token')
         if token is None:
             raise ValidationError('Token is required')
+        return token
 
-        return queryset.filter(session=token)
+    def get_queryset(self):
+        return self.queryset.filter(
+            session=self.get_voting_session_token()
+        )
 
     def create(self, request, *args, **kwargs):
-        token = request.query_params.get('token')
-        if token is None:
-            raise ValidationError('Token is required')
-
-        self.request.data['session'] = token
+        self.request.data['session'] = self.get_voting_session_token()
         return super().create(request, *args, **kwargs)
 
     def update(self, request, *args, **kwargs):
