@@ -1,0 +1,3 @@
+set -a && . .env
+docker-compose run web /bin/sh $@
+
