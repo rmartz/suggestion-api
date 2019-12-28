@@ -82,11 +82,9 @@ class BallotOptionSuggestTests(TestCase):
 
         json = response.json()
         self.assertIn('results', json)
-        self.assertEqual(json['results'], [{
-            'ballot': ballot_option.ballot.id,
-            'id': ballot_option.id,
-            'label': ballot_option.label
-        }])
+        self.assertEqual(len(json['results']), 1)
+        self.assertIn('id', json['results'][0])
+        self.assertEqual(json['results'][0]['id'], ballot_option.id)
 
     def test_suggestions__get__exclude_unrelated_options(self):
         BallotOptionFactory.create()
@@ -113,3 +111,49 @@ class BallotOptionSuggestTests(TestCase):
         json = response.json()
         self.assertIn('results', json)
         self.assertEqual(json['results'], [])
+
+    def test_suggestions__get__voted_for_ranks_higher(self):
+        """Option that is voted for should be suggested before base option."""
+
+        base_option = BallotOptionFactory.create()
+        voted_for = UserVoteFactory.create(
+            option__ballot=base_option.ballot,
+            polarity=True
+        )
+        session = VotingSessionFactory(room__ballot=base_option.ballot)
+
+        url = reverse('ballotoption-list')
+        response = self.client.get(url + f'?suggest-for={session.id}')
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        json = response.json()
+        self.assertIn('results', json)
+        self.assertEqual(len(json['results']), 2)
+        self.assertIn('id', json['results'][0])
+        self.assertEqual(json['results'][0]['id'], voted_for.option.id)
+        self.assertIn('id', json['results'][1])
+        self.assertEqual(json['results'][1]['id'], base_option.id)
+
+    def test_suggestions__get__voted_against_ranks_higher(self):
+        """Option that is voted against should be suggested after base option."""
+
+        base_option = BallotOptionFactory.create()
+        voted_against = UserVoteFactory.create(
+            option__ballot=base_option.ballot,
+            polarity=False
+        )
+        session = VotingSessionFactory(room__ballot=base_option.ballot)
+
+        url = reverse('ballotoption-list')
+        response = self.client.get(url + f'?suggest-for={session.id}')
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        json = response.json()
+        self.assertIn('results', json)
+        self.assertEqual(len(json['results']), 2)
+        self.assertIn('id', json['results'][0])
+        self.assertEqual(json['results'][0]['id'], base_option.id)
+        self.assertIn('id', json['results'][1])
+        self.assertEqual(json['results'][1]['id'], voted_against.option.id)

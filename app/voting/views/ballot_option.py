@@ -1,6 +1,9 @@
+from django.db.models import Count, Q, FloatField
+from django.db.models.functions import Cast
+from rest_framework import viewsets
+
 from voting.models import BallotOption
 from voting.serializers import BallotOptionSerializer
-from rest_framework import viewsets
 
 
 class BallotOptionViewSet(viewsets.ReadOnlyModelViewSet):
@@ -21,6 +24,11 @@ class BallotOptionViewSet(viewsets.ReadOnlyModelViewSet):
         ).exclude(
             # But exclude any options that have already been voted
             uservote__session__id=session_token
-        )
+        ).annotate(
+            score=Cast(
+                (Count('uservote', filter=Q(uservote__polarity=True)) + 1.0)
+                / (Count('uservote') + 2),
+                FloatField())
+        ).order_by('-score')
 
         return queryset
