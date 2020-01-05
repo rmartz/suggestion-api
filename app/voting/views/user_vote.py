@@ -3,25 +3,20 @@ from rest_framework.serializers import ValidationError
 
 from voting.models import UserVote
 from voting.serializers import UserVoteSerializer
+from .utils import get_voting_session_token
 
 
 class UserVoteViewSet(viewsets.ModelViewSet):
     queryset = UserVote.objects.all().order_by('-created')
     serializer_class = UserVoteSerializer
 
-    def get_voting_session_token(self):
-        token = self.request.query_params.get('token')
-        if token is None:
-            raise ValidationError('Token is required')
-        return token
-
     def get_queryset(self):
         return self.queryset.filter(
-            session=self.get_voting_session_token()
+            session=get_voting_session_token(self.request)
         )
 
     def create(self, request, *args, **kwargs):
-        self.request.data['session'] = self.get_voting_session_token()
+        self.request.data['session'] = get_voting_session_token(self.request)
         return super().create(request, *args, **kwargs)
 
     def update(self, request, *args, **kwargs):

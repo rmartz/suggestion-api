@@ -46,11 +46,11 @@ def initialize_correlations(sender, created, instance, **kwargs):
 )
 def update_correlations(sender, instance, **kwargs):
     # Use exponential moving average to adjust correlation weights
-    # Correlation will vary between -1 and 1
-    # Values towards 0 indicate a lack of correlation
+    # Correlation will vary between 0 and 1
+    # Values towards 0.5 indicate a lack of correlation
     EMA_WEIGHT = 0.95
 
-    score = 1 if instance.polarity else -1
+    score = 1 if instance.polarity else 0
 
     OptionCorrelation.objects.for_voting_session(
         instance.session

@@ -61,6 +61,8 @@ class OptionCorrelationManager(models.Manager):
         return self.filter(
             predicate__uservote__session=session,
             predicate__uservote__polarity=F('predicate_polarity')
+        ).exclude(
+            target__uservote__session=session,
         )
 
 
