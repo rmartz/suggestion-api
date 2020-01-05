@@ -1,4 +1,4 @@
-from django.db import models
+from django.db import models, F
 
 
 class ChangeTrackModel(models.Model):
@@ -54,3 +54,30 @@ class UserVote(ChangeTrackModel):
 
     class Meta:
         unique_together = [['session', 'option']]
+
+
+class OptionCorrelationManager(models.Manager):
+    def for_voting_session(self, session):
+        return self.filter(
+            predicate__uservote__session=session,
+            predicate__uservote__polarity=F('predicate_polarity')
+        )
+
+
+class OptionCorrelation(ChangeTrackModel):
+    objects = OptionCorrelationManager()
+
+    predicate = models.ForeignKey(
+        BallotOption,
+        on_delete=models.CASCADE,
+        related_name='correlation_predicate'
+    )
+    predicate_polarity = models.BooleanField()
+
+    target = models.ForeignKey(
+        BallotOption,
+        on_delete=models.CASCADE,
+        related_name='correlation_target'
+    )
+
+    correlation = models.FloatField(default=0)
