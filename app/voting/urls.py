@@ -4,7 +4,8 @@ from .views import (
     BallotOptionViewSet,
     RoomViewSet,
     VotingSessionViewSet,
-    UserVoteViewSet
+    UserVoteViewSet,
+    SuggestionViewSet
 )
 
 router = routers.DefaultRouter()
@@ -13,3 +14,4 @@ router.register(r'ballotoption', BallotOptionViewSet)
 router.register(r'room', RoomViewSet)
 router.register(r'session', VotingSessionViewSet)
 router.register(r'vote', UserVoteViewSet)
+router.register(r'suggest', SuggestionViewSet, basename='suggest')

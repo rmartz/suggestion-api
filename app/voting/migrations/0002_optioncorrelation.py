@@ -18,7 +18,7 @@ class Migration(migrations.Migration):
                 ('created', models.DateTimeField(auto_now_add=True)),
                 ('updated', models.DateTimeField(auto_now=True)),
                 ('predicate_polarity', models.BooleanField()),
-                ('correlation', models.FloatField(default=0)),
+                ('correlation', models.FloatField(default=0.5)),
                 ('predicate', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='correlation_predicate', to='voting.BallotOption')),
                 ('target', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='correlation_target', to='voting.BallotOption')),
             ],

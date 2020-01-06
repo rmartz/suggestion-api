@@ -1,4 +1,4 @@
-from django.db import models, F
+from django.db import models
 
 
 class ChangeTrackModel(models.Model):
@@ -60,7 +60,7 @@ class OptionCorrelationManager(models.Manager):
     def for_voting_session(self, session):
         return self.filter(
             predicate__uservote__session=session,
-            predicate__uservote__polarity=F('predicate_polarity')
+            predicate__uservote__polarity=models.F('predicate_polarity')
         ).exclude(
             target__uservote__session=session,
         )
@@ -82,4 +82,4 @@ class OptionCorrelation(ChangeTrackModel):
         related_name='correlation_target'
     )
 
-    correlation = models.FloatField(default=0)
+    correlation = models.FloatField(default=0.5)
