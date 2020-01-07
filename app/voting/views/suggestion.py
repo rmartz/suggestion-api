@@ -1,4 +1,4 @@
-from django.db.models import Q, F, Avg, OuterRef, Subquery
+from django.db.models import Q, F, Avg, OuterRef, Subquery, FloatField
 from django.db.models.functions import Abs
 from rest_framework import viewsets
 
@@ -21,7 +21,7 @@ class SuggestionViewSet(viewsets.ReadOnlyModelViewSet):
             uservote__session=session_token
         ).annotate(
             likelihood=self.get_likelihood_annotation(session_token),
-            significance=self.get_likelihood_annotation(session_token),
+            significance=self.get_significance_annotation(session_token),
         ).values(
             'id',
             'likelihood',
@@ -53,16 +53,16 @@ class SuggestionViewSet(viewsets.ReadOnlyModelViewSet):
 
         # Build a subquery of all correlations for relevant options
         # Since we want the difference, start getting all with polarity=True
-        correlation_change = OptionCorrelation.objects.filter(
+        correlation_change = Subquery(OptionCorrelation.objects.filter(
             predicate=OuterRef('pk'),
-            polarity=True
+            predicate_polarity=True
         ).annotate(
             # Next, annotate a new column called correlation_false for the same options,
             # but with polarity=False
             correlation_false=Subquery(
                 OptionCorrelation.objects.filter(
                     predicate=OuterRef('predicate'),
-                    polarity=False,
+                    predicate_polarity=False,
                     target=OuterRef('target')
                 ).values('correlation')
             )
@@ -71,11 +71,13 @@ class SuggestionViewSet(viewsets.ReadOnlyModelViewSet):
             correlation_change=Abs(
                 F('correlation')-F('correlation_false')
             )
-        )
+        ), output_field=FloatField())
         # Finally, average the absolute differences for all targets of a given predicate
         return Avg(
             correlation_change,
             filter=Q(
+                # Exclude options that the session has voted on, either as the predicate or target,
+                # since we want options that are likely to affect future votes
                 ~Q(
                     correlation_predicate__predicate__uservote__session=session_token) &
                 ~Q(
