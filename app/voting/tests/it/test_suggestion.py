@@ -48,7 +48,7 @@ class BallotOptionSuggestTests(TestCase):
         self.assertEqual(json['results'], [])
 
     def test_suggestions__get__voted_for_ranks_higher(self):
-        """Option that is voted for should be suggested before base option."""
+        """Option that is voted for after other should be suggested first."""
 
         base_vote = UserVoteFactory.create(polarity=False)
         voted_for = UserVoteFactory.create(
@@ -72,7 +72,7 @@ class BallotOptionSuggestTests(TestCase):
         self.assertEqual(json['results'][1]['id'], base_vote.option.id)
 
     def test_suggestions__get__voted_against_ranks_lower(self):
-        """Option that is voted against should be suggested after base option."""
+        """Option that is voted against after other should be suggested last."""
 
         base_vote = UserVoteFactory.create(polarity=True)
         voted_against = UserVoteFactory.create(
