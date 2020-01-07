@@ -22,11 +22,11 @@ class BallotOptionSuggestTests(TestCase):
         self.assertEqual(json['results'][0]['id'], ballot_option.id)
 
     def test_suggestions__get__exclude_unrelated_options(self):
-        BallotOptionFactory.create()
-        user_vote = UserVoteFactory.create()
+        UserVoteFactory.create()
+        session = VotingSessionFactory.create()
 
         url = reverse('suggest-list')
-        response = self.client.get(url + f'?token={user_vote.session.id}')
+        response = self.client.get(url + f'?token={session.id}')
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
@@ -50,12 +50,13 @@ class BallotOptionSuggestTests(TestCase):
     def test_suggestions__get__voted_for_ranks_higher(self):
         """Option that is voted for should be suggested before base option."""
 
-        base_option = BallotOptionFactory.create()
+        base_vote = UserVoteFactory.create(polarity=False)
         voted_for = UserVoteFactory.create(
-            option__ballot=base_option.ballot,
+            option__ballot=base_vote.option.ballot,
+            session=base_vote.session,
             polarity=True
         )
-        session = VotingSessionFactory(room__ballot=base_option.ballot)
+        session = VotingSessionFactory(room__ballot=base_vote.option.ballot)
 
         url = reverse('suggest-list')
         response = self.client.get(url + f'?token={session.id}')
@@ -63,23 +64,23 @@ class BallotOptionSuggestTests(TestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         json = response.json()
-        raise Exception(json)
         self.assertIn('results', json)
         self.assertEqual(len(json['results']), 2)
         self.assertIn('id', json['results'][0])
         self.assertEqual(json['results'][0]['id'], voted_for.option.id)
         self.assertIn('id', json['results'][1])
-        self.assertEqual(json['results'][1]['id'], base_option.id)
+        self.assertEqual(json['results'][1]['id'], base_vote.option.id)
 
-    def test_suggestions__get__voted_against_ranks_higher(self):
+    def test_suggestions__get__voted_against_ranks_lower(self):
         """Option that is voted against should be suggested after base option."""
 
-        base_option = BallotOptionFactory.create()
+        base_vote = UserVoteFactory.create(polarity=True)
         voted_against = UserVoteFactory.create(
-            option__ballot=base_option.ballot,
+            option__ballot=base_vote.option.ballot,
+            session=base_vote.session,
             polarity=False
         )
-        session = VotingSessionFactory(room__ballot=base_option.ballot)
+        session = VotingSessionFactory(room__ballot=base_vote.option.ballot)
 
         url = reverse('suggest-list')
         response = self.client.get(url + f'?token={session.id}')
@@ -90,6 +91,6 @@ class BallotOptionSuggestTests(TestCase):
         self.assertIn('results', json)
         self.assertEqual(len(json['results']), 2)
         self.assertIn('id', json['results'][0])
-        self.assertEqual(json['results'][0]['id'], base_option.id)
+        self.assertEqual(json['results'][0]['id'], base_vote.option.id)
         self.assertIn('id', json['results'][1])
         self.assertEqual(json['results'][1]['id'], voted_against.option.id)

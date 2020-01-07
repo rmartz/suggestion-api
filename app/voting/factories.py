@@ -1,5 +1,5 @@
 import factory
-from .models import Ballot, BallotOption, Room, VotingSession, UserVote
+from .models import Ballot, BallotOption, Room, VotingSession, UserVote, OptionCorrelation
 
 
 class BallotFactory(factory.django.DjangoModelFactory):
@@ -46,3 +46,15 @@ class UserVoteFactory(factory.django.DjangoModelFactory):
         ballot=factory.SelfAttribute('..session.room.ballot')
     )
     polarity = False
+
+
+class OptionCorrelationFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = OptionCorrelation
+
+    predicate = factory.SubFactory(BallotOptionFactory)
+    predicate_polarity = False
+    target = factory.SubFactory(
+        BallotOptionFactory,
+        ballot=factory.SelfAttribute('..session.room.ballot')
+    )

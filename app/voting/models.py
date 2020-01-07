@@ -56,19 +56,7 @@ class UserVote(ChangeTrackModel):
         unique_together = [['session', 'option']]
 
 
-class OptionCorrelationManager(models.Manager):
-    def for_voting_session(self, session):
-        return self.filter(
-            predicate__uservote__session=session,
-            predicate__uservote__polarity=models.F('predicate_polarity')
-        ).exclude(
-            target__uservote__session=session,
-        )
-
-
 class OptionCorrelation(ChangeTrackModel):
-    objects = OptionCorrelationManager()
-
     predicate = models.ForeignKey(
         BallotOption,
         on_delete=models.CASCADE,

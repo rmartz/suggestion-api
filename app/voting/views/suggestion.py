@@ -14,7 +14,9 @@ class SuggestionViewSet(viewsets.ReadOnlyModelViewSet):
     def get_queryset(self):
         session_token = get_voting_session_token(self.request)
 
-        return BallotOption.objects.exclude(
+        return BallotOption.objects.filter(
+            ballot__room__votingsession=session_token
+        ).exclude(
             # Do not offer suggestions that have already been voted on
             uservote__session=session_token
         ).annotate(
