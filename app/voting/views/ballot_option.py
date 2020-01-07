@@ -1,6 +1,7 @@
+from rest_framework import viewsets
+
 from voting.models import BallotOption
 from voting.serializers import BallotOptionSerializer
-from rest_framework import viewsets
 
 
 class BallotOptionViewSet(viewsets.ReadOnlyModelViewSet):

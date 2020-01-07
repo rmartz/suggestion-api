@@ -54,3 +54,23 @@ class UserVote(ChangeTrackModel):
 
     class Meta:
         unique_together = [['session', 'option']]
+
+
+class OptionCorrelation(ChangeTrackModel):
+    predicate = models.ForeignKey(
+        BallotOption,
+        on_delete=models.CASCADE,
+        related_name='correlation_predicate'
+    )
+    predicate_polarity = models.BooleanField()
+
+    target = models.ForeignKey(
+        BallotOption,
+        on_delete=models.CASCADE,
+        related_name='correlation_target'
+    )
+
+    correlation = models.FloatField(default=0.5)
+
+    class Meta:
+        unique_together = [['predicate', 'predicate_polarity', 'target']]

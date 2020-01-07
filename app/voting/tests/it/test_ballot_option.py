@@ -5,7 +5,7 @@ from rest_framework import status
 from voting.factories import BallotOptionFactory
 
 
-class BallotOptionTests(TestCase):
+class BallotOptionListTests(TestCase):
     def test_ballot_option__list__success(self):
         ballot_option = BallotOptionFactory.create()
 
@@ -21,6 +21,8 @@ class BallotOptionTests(TestCase):
             'label': ballot_option.label
         }])
 
+
+class BallotOptionGetTests(TestCase):
     def test_ballot_option__get__success(self):
         ballot_option = BallotOptionFactory.create()
 
@@ -34,6 +36,8 @@ class BallotOptionTests(TestCase):
             'label': ballot_option.label
         })
 
+
+class BallotOptionCreateTests(TestCase):
     def test_ballot_option__create__prohibited(self):
         test_label = 'Test ballot option'
         url = reverse('ballotoption-list')
@@ -42,6 +46,8 @@ class BallotOptionTests(TestCase):
         self.assertEqual(response.status_code,
                          status.HTTP_405_METHOD_NOT_ALLOWED)
 
+
+class BallotOptionUpdateTests(TestCase):
     def test_ballot_option__update__prohibited(self):
         ballot_option = BallotOptionFactory.create()
 
@@ -52,6 +58,8 @@ class BallotOptionTests(TestCase):
         self.assertEqual(response.status_code,
                          status.HTTP_405_METHOD_NOT_ALLOWED)
 
+
+class BallotOptionDeleteTests(TestCase):
     def test_ballot_option__delete__prohibited(self):
         ballot_option = BallotOptionFactory.create()
 
