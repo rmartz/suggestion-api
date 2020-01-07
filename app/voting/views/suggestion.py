@@ -50,10 +50,15 @@ class SuggestionViewSet(viewsets.ReadOnlyModelViewSet):
         # voted targets as we want to maximize effect on future suggestions)
         # e.g., if A has a 0.3 correlation with B, and ~A has a 0.8 correlation with B, then A has
         # a significance of 0.5 with B
+
+        # Build a subquery of all correlations for relevant options
+        # Since we want the difference, start getting all with polarity=True
         correlation_change = OptionCorrelation.objects.filter(
             predicate=OuterRef('pk'),
             polarity=True
         ).annotate(
+            # Next, annotate a new column called correlation_false for the same options,
+            # but with polarity=False
             correlation_false=Subquery(
                 OptionCorrelation.objects.filter(
                     predicate=OuterRef('predicate'),
@@ -62,10 +67,12 @@ class SuggestionViewSet(viewsets.ReadOnlyModelViewSet):
                 ).values('correlation')
             )
         ).values(
+            # Then collapse the rows to just the absolute difference up or down
             correlation_change=Abs(
                 F('correlation')-F('correlation_false')
             )
         )
+        # Finally, average the absolute differences for all targets of a given predicate
         return Avg(
             correlation_change,
             filter=Q(
