@@ -1,6 +1,7 @@
 from django.db.models import Q, F, Avg, OuterRef, Subquery, FloatField
 from django.db.models.functions import Abs
 from rest_framework import viewsets
+from rest_framework.serializers import ValidationError
 
 from voting.models import BallotOption, OptionCorrelation
 from voting.serializers import SuggestionSerializer
@@ -20,13 +21,23 @@ class SuggestionViewSet(viewsets.ReadOnlyModelViewSet):
             # Do not offer suggestions that have already been voted on
             uservote__session=session_token
         ).annotate(
-            likelihood=self.get_likelihood_annotation(session_token),
-            significance=self.get_significance_annotation(session_token),
+            score=self.get_score_annotation(session_token)
         ).values(
             'id',
-            'likelihood',
-            'significance'
-        ).order_by('-likelihood')
+            'score'
+        ).order_by('-score')
+
+    def get_score_annotation(self, session_token):
+        mode = self.request.query_params.get('mode')
+        try:
+            func = {
+                'suggest': self.get_likelihood_annotation,
+                'explore': self.get_significance_annotation
+            }[mode]
+        except KeyError:
+            raise ValidationError("param 'mode' must be either 'suggest' or 'explore'")
+        else:
+            return func(session_token)
 
     def get_likelihood_annotation(self, session_token):
         # Average the correlation value over all rows for predicates this session has not excluded

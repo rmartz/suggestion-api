@@ -8,7 +8,15 @@ from voting.factories import BallotOptionFactory, VotingSessionFactory, UserVote
 class SuggestionListTests(TestCase):
     def test_suggestions__list_no_token__error(self):
         url = reverse('suggest-list')
-        response = self.client.get(url)
+        response = self.client.get(url + '?mode=suggest')
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_suggestions__list_no_mode__error(self):
+        session = VotingSessionFactory.create()
+
+        url = reverse('suggest-list')
+        response = self.client.get(url + f'?token={session.id}')
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
@@ -35,7 +43,7 @@ class SuggestionListTests(TestCase):
         session = VotingSessionFactory.create(room__ballot=ballot_option.ballot)
 
         url = reverse('suggest-list')
-        response = self.client.get(url + f'?token={session.id}')
+        response = self.client.get(url + f'?token={session.id}&mode=suggest')
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
@@ -50,7 +58,7 @@ class SuggestionListTests(TestCase):
         session = VotingSessionFactory.create()
 
         url = reverse('suggest-list')
-        response = self.client.get(url + f'?token={session.id}')
+        response = self.client.get(url + f'?token={session.id}&mode=suggest')
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
@@ -63,7 +71,7 @@ class SuggestionListTests(TestCase):
         user_vote = UserVoteFactory.create(option=ballot_option)
 
         url = reverse('suggest-list')
-        response = self.client.get(url + f'?token={user_vote.session.id}')
+        response = self.client.get(url + f'?token={user_vote.session.id}&mode=suggest')
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
@@ -83,7 +91,7 @@ class SuggestionListTests(TestCase):
         session = VotingSessionFactory(room__ballot=base_vote.option.ballot)
 
         url = reverse('suggest-list')
-        response = self.client.get(url + f'?token={session.id}')
+        response = self.client.get(url + f'?token={session.id}&mode=suggest')
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
@@ -107,7 +115,7 @@ class SuggestionListTests(TestCase):
         session = VotingSessionFactory(room__ballot=base_vote.option.ballot)
 
         url = reverse('suggest-list')
-        response = self.client.get(url + f'?token={session.id}')
+        response = self.client.get(url + f'?token={session.id}&mode=suggest')
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
