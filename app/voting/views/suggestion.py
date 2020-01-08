@@ -9,33 +9,51 @@ from .utils import get_voting_session_token
 
 
 class SuggestionViewSet(viewsets.ReadOnlyModelViewSet):
-    queryset = OptionCorrelation.objects.all().order_by('-created')
+    queryset = BallotOption.objects.all().order_by('-created')
     serializer_class = SuggestionSerializer
 
-    def get_queryset(self):
-        session_token = get_voting_session_token(self.request)
+    LIKELIHOOD = 'suggest'
+    SIGNIFICANCE = 'explore'
 
-        return BallotOption.objects.filter(
+    def get_queryset(self):
+        return self.construct_annotated_queryset().values(
+            'id',
+            'score'
+        ).order_by('-score')
+
+    def construct_annotated_queryset(self):
+        session_token = get_voting_session_token(self.request)
+        mode = self.request.query_params.get('mode')
+
+        queryset = self.queryset.filter(
             ballot__room__votingsession=session_token
         ).exclude(
             # Do not offer suggestions that have already been voted on
             uservote__session=session_token
         ).annotate(
-            score=self.get_score_annotation(session_token)
-        ).values(
-            'id',
-            'score'
-        ).order_by('-score')
+            score=self.get_score_annotation(mode, session_token)
+        )
 
-    def get_score_annotation(self, session_token):
-        mode = self.request.query_params.get('mode')
+        if mode == self.LIKELIHOOD:
+            # In likelihood mode, do not include suggestions that another session has voted against.
+            # This isn't a problem in explore mode, since even if we know an option can't be a
+            # consensus choice, suggesting it can provide us with information about the user
+            queryset = queryset.exclude(
+                uservote__polarity=False,
+                uservote__session__room__votingsession=session_token
+            )
+
+        return queryset
+
+    def get_score_annotation(self, mode, session_token):
         try:
             func = {
-                'suggest': self.get_likelihood_annotation,
-                'explore': self.get_significance_annotation
+                self.LIKELIHOOD: self.get_likelihood_annotation,
+                self.SIGNIFICANCE: self.get_significance_annotation
             }[mode]
         except KeyError:
-            raise ValidationError("param 'mode' must be either 'suggest' or 'explore'")
+            raise ValidationError(
+               f"param 'mode' must be either '{self.LIKELIHOOD}' or '{self.SIGNIFICANCE}'")
         else:
             return func(session_token)
 

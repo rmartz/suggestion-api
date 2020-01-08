@@ -126,3 +126,39 @@ class SuggestionListTests(TestCase):
         self.assertEqual(json['results'][0]['id'], base_vote.option.id)
         self.assertIn('id', json['results'][1])
         self.assertEqual(json['results'][1]['id'], voted_against.option.id)
+
+    def test_suggestions__other_session_voted_against__excluded(self):
+        # Do not suggest options another session in the same room voted against
+        session = VotingSessionFactory.create()
+        UserVoteFactory.create(
+            session__room=session.room,
+            polarity=False
+        )
+
+        url = reverse('suggest-list')
+        response = self.client.get(url + f'?token={session.id}&mode=suggest')
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        json = response.json()
+        self.assertIn('results', json)
+        self.assertEqual(len(json['results']), 0)
+
+    def test_suggestions__other_session_voted_for__included(self):
+        # Suggest options that another room voted on if they voted for it
+        session = VotingSessionFactory.create()
+        vote = UserVoteFactory.create(
+            session__room=session.room,
+            polarity=True
+        )
+
+        url = reverse('suggest-list')
+        response = self.client.get(url + f'?token={session.id}&mode=suggest')
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        json = response.json()
+        self.assertIn('results', json)
+        self.assertEqual(len(json['results']), 1)
+        self.assertIn('id', json['results'][0])
+        self.assertEqual(json['results'][0]['id'], vote.option.id)
