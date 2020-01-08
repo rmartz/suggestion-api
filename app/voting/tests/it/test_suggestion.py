@@ -5,8 +5,32 @@ from rest_framework import status
 from voting.factories import BallotOptionFactory, VotingSessionFactory, UserVoteFactory
 
 
-class BallotOptionSuggestTests(TestCase):
-    def test_suggestions__get__includes_options(self):
+class SuggestionListTests(TestCase):
+    def test_suggestions__list_no_token__error(self):
+        url = reverse('suggest-list')
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_suggestions__post__not_allowed(self):
+        url = reverse('suggest-list')
+        response = self.client.post(url)
+
+        self.assertEqual(response.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
+
+    def test_suggestions__delete__not_allowed(self):
+        url = reverse('suggest-list')
+        response = self.client.delete(url)
+
+        self.assertEqual(response.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
+
+    def test_suggestions__put__not_allowed(self):
+        url = reverse('suggest-list')
+        response = self.client.post(url)
+
+        self.assertEqual(response.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
+
+    def test_suggestions__list__includes_options(self):
         ballot_option = BallotOptionFactory.create()
         session = VotingSessionFactory.create(room__ballot=ballot_option.ballot)
 
@@ -21,7 +45,7 @@ class BallotOptionSuggestTests(TestCase):
         self.assertIn('id', json['results'][0])
         self.assertEqual(json['results'][0]['id'], ballot_option.id)
 
-    def test_suggestions__get__exclude_unrelated_options(self):
+    def test_suggestions__list__exclude_unrelated_options(self):
         UserVoteFactory.create()
         session = VotingSessionFactory.create()
 
@@ -34,7 +58,7 @@ class BallotOptionSuggestTests(TestCase):
         self.assertIn('results', json)
         self.assertEqual(json['results'], [])
 
-    def test_suggestions__get__exclude_voted_options(self):
+    def test_suggestions__list__exclude_voted_options(self):
         ballot_option = BallotOptionFactory.create()
         user_vote = UserVoteFactory.create(option=ballot_option)
 
@@ -47,7 +71,7 @@ class BallotOptionSuggestTests(TestCase):
         self.assertIn('results', json)
         self.assertEqual(json['results'], [])
 
-    def test_suggestions__get__voted_for_ranks_higher(self):
+    def test_suggestions__list__voted_for_ranks_higher(self):
         """Option that is voted for after other should be suggested first."""
 
         base_vote = UserVoteFactory.create(polarity=False)
@@ -71,7 +95,7 @@ class BallotOptionSuggestTests(TestCase):
         self.assertIn('id', json['results'][1])
         self.assertEqual(json['results'][1]['id'], base_vote.option.id)
 
-    def test_suggestions__get__voted_against_ranks_lower(self):
+    def test_suggestions__list__voted_against_ranks_lower(self):
         """Option that is voted against after other should be suggested last."""
 
         base_vote = UserVoteFactory.create(polarity=True)
