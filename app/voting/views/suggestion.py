@@ -62,6 +62,15 @@ class SuggestionViewSet(viewsets.ReadOnlyModelViewSet):
         # e.g., if A has a 0.3 correlation with B, and ~A has a 0.8 correlation with B, then A has
         # a significance of 0.5 with B
 
+        # We want to weigh the raw significance score by the likelihood of the option being chosen.
+        # This centers around 0.5, so that a likelihood of 0.5 is a 1x multiplier, and drops off to
+        #  0x for 100% or 0% likelihood.
+        # This way, options that may have high impact but are unlikely to provide information about
+        #  the user will be ranked below options that have a more moderate impact, but are more
+        # likely to reveal something about the user's preferences.
+        likelihood_score = (1 - 2 * Abs(
+            0.5 - self.get_likelihood_annotation(session_token)))
+
         # Build a subquery of all correlations for relevant options
         # Since we want the difference, start getting all with polarity=True
         correlation_change = Subquery(OptionCorrelation.objects.filter(
@@ -84,7 +93,7 @@ class SuggestionViewSet(viewsets.ReadOnlyModelViewSet):
             )
         ), output_field=FloatField())
         # Finally, average the absolute differences for all targets of a given predicate
-        return Avg(
+        return likelihood_score * Avg(
             correlation_change,
             filter=Q(
                 # Exclude options that the session has voted on, either as the predicate or target,
