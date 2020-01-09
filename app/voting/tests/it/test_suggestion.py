@@ -188,6 +188,21 @@ class SuggestionLikelihoodTests(TestCase):
 
 
 class SuggestionSignificanceTests(TestCase):
+    @staticmethod
+    def create_correlations(predicate, target, negative_correlation, positive_correlation):
+        OptionCorrelationFactory.create(
+            predicate=predicate,
+            predicate_polarity=True,
+            target=target,
+            correlation=positive_correlation
+        )
+        OptionCorrelationFactory.create(
+            predicate=predicate,
+            predicate_polarity=False,
+            target=target,
+            correlation=negative_correlation
+        )
+
     @factory.django.mute_signals(post_save)
     def test_exploration__list__includes_options(self):
         predicate = BallotOptionFactory.create()
@@ -195,31 +210,19 @@ class SuggestionSignificanceTests(TestCase):
         session = VotingSessionFactory.create(room__ballot=predicate.ballot)
 
         # Create correlations that give predicate->target a 0.8 spread
-        OptionCorrelationFactory.create(
-            predicate=predicate,
-            predicate_polarity=True,
-            target=target,
-            correlation=0.9
-        )
-        OptionCorrelationFactory.create(
-            predicate=predicate,
-            predicate_polarity=False,
-            target=target,
-            correlation=0.1
+        self.create_correlations(
+            predicate,
+            target,
+            0.1,
+            0.9
         )
 
         # Create correlations that give target->predicate a even 0.5 likelihood
-        OptionCorrelationFactory.create(
-            predicate=target,
-            predicate_polarity=True,
-            target=predicate,
-            correlation=0.5
-        )
-        OptionCorrelationFactory.create(
-            predicate=target,
-            predicate_polarity=False,
-            target=predicate,
-            correlation=0.5
+        self.create_correlations(
+            target,
+            predicate,
+            0.5,
+            0.5
         )
 
         url = reverse('suggest-list')
@@ -248,31 +251,19 @@ class SuggestionSignificanceTests(TestCase):
         session = VotingSessionFactory.create(room__ballot=predicate.ballot)
 
         # Create correlations that give predicate->target a 0.8 spread
-        OptionCorrelationFactory.create(
-            predicate=predicate,
-            predicate_polarity=True,
-            target=target,
-            correlation=0.9
-        )
-        OptionCorrelationFactory.create(
-            predicate=predicate,
-            predicate_polarity=False,
-            target=target,
-            correlation=0.1
+        self.create_correlations(
+            predicate,
+            target,
+            0.1,
+            0.9
         )
 
         # Create correlations that give target->predicate a even 0.5 likelihood
-        OptionCorrelationFactory.create(
-            predicate=target,
-            predicate_polarity=True,
-            target=predicate,
-            correlation=0.9
-        )
-        OptionCorrelationFactory.create(
-            predicate=target,
-            predicate_polarity=False,
-            target=predicate,
-            correlation=0.9
+        self.create_correlations(
+            target,
+            predicate,
+            0.9,
+            0.9
         )
 
         url = reverse('suggest-list')
@@ -297,31 +288,19 @@ class SuggestionSignificanceTests(TestCase):
         session = VotingSessionFactory.create(room__ballot=predicate.ballot)
 
         # Create correlations that give predicate->target a 0.8 spread
-        OptionCorrelationFactory.create(
-            predicate=predicate,
-            predicate_polarity=True,
-            target=target,
-            correlation=0.9
-        )
-        OptionCorrelationFactory.create(
-            predicate=predicate,
-            predicate_polarity=False,
-            target=target,
-            correlation=0.1
+        self.create_correlations(
+            predicate,
+            target,
+            0.1,
+            0.9
         )
 
         # Create correlations that give target->predicate a even 0.5 likelihood
-        OptionCorrelationFactory.create(
-            predicate=target,
-            predicate_polarity=True,
-            target=predicate,
-            correlation=0.1
-        )
-        OptionCorrelationFactory.create(
-            predicate=target,
-            predicate_polarity=False,
-            target=predicate,
-            correlation=0.1
+        self.create_correlations(
+            target,
+            predicate,
+            0.1,
+            0.1
         )
 
         url = reverse('suggest-list')
