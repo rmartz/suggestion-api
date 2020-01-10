@@ -2,30 +2,23 @@ from django.db.models import Q, F, Avg, OuterRef, Subquery, FloatField
 from django.db.models.functions import Abs
 from rest_framework import viewsets
 from rest_framework.serializers import ValidationError
+from rest_framework.response import Response
 
 from voting.models import BallotOption, OptionCorrelation
 from voting.serializers import SuggestionSerializer
 from .utils import get_voting_session_token
 
 
-class SuggestionViewSet(viewsets.ReadOnlyModelViewSet):
-    queryset = BallotOption.objects.all().order_by('-created')
-    serializer_class = SuggestionSerializer
-
+class SuggestionViewSet(viewsets.ViewSet):
     LIKELIHOOD = 'suggest'
     SIGNIFICANCE = 'explore'
+    SUGGESTION_COUNT = 5
 
-    def get_queryset(self):
-        return self.construct_annotated_queryset().values(
-            'id',
-            'score'
-        ).order_by('-score')
-
-    def construct_annotated_queryset(self):
-        session_token = get_voting_session_token(self.request)
+    def list(self, request):
+        session_token = get_voting_session_token(request)
         mode = self.request.query_params.get('mode')
 
-        queryset = self.queryset.filter(
+        queryset = BallotOption.objects.filter(
             ballot__room__votingsession=session_token
         ).exclude(
             # Do not offer suggestions that have already been voted on
@@ -43,7 +36,12 @@ class SuggestionViewSet(viewsets.ReadOnlyModelViewSet):
                 uservote__session__room__votingsession=session_token
             )
 
-        return queryset
+        data = queryset.values(
+            'id',
+            'score'
+        ).order_by('-score')[:self.SUGGESTION_COUNT]
+        serializer = SuggestionSerializer(data, many=True)
+        return Response(serializer.data)
 
     def get_score_annotation(self, mode, session_token):
         try:
@@ -59,14 +57,13 @@ class SuggestionViewSet(viewsets.ReadOnlyModelViewSet):
 
     def get_likelihood_annotation(self, session_token):
         # Average the correlation value over all rows for predicates this session has not excluded
-        # (i.e., either has not voted on or has voted matching the row)
+        # That is either has not voted on or has voted matching the row
+        # This is equivalent to there not being a vote for the wrong polarity
         return Avg(
             'correlation_target__correlation',
             filter=~Q(
-                correlation_target__predicate__uservote__session=session_token
-            ) | Q(
                 correlation_target__predicate__uservote__session=session_token,
-                correlation_target__predicate_polarity=F(
+                correlation_target__predicate_polarity=not F(
                     'correlation_target__predicate__uservote__polarity'
                 )
             )
@@ -102,24 +99,20 @@ class SuggestionViewSet(viewsets.ReadOnlyModelViewSet):
                     predicate=OuterRef('predicate'),
                     predicate_polarity=False,
                     target=OuterRef('target')
-                ).values('correlation')
+                ).values('correlation')[:1]
             )
         ).values(
             # Then collapse the rows to just the absolute difference up or down
             correlation_change=Abs(
                 F('correlation')-F('correlation_false')
             )
-        ), output_field=FloatField())
+        )[:1], output_field=FloatField())
         # Finally, average the absolute differences for all targets of a given predicate
         return likelihood_score * Avg(
             correlation_change,
-            filter=Q(
+            filter=~Q(
                 # Exclude options that the session has voted on, either as the predicate or target,
                 # since we want options that are likely to affect future votes
-                ~Q(
-                    correlation_predicate__predicate__uservote__session=session_token) &
-                ~Q(
-                    correlation_predicate__target__uservote__session=session_token
-                )
+                correlation_predicate__target__uservote__session=session_token
             )
         )
