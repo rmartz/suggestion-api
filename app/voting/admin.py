@@ -8,7 +8,10 @@ class BallotAdmin(admin.ModelAdmin):
 
 
 class BallotOptionAdmin(admin.ModelAdmin):
-    pass
+    def get_queryset(self, request):
+        return super().get_queryset(request).prefetch_related(
+            'ballot'
+        )
 
 
 admin.site.register(Ballot, BallotAdmin)

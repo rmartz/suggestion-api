@@ -26,6 +26,9 @@ class BallotOption(ChangeTrackModel):
     class Meta:
         unique_together = [['ballot', 'label']]
 
+    def __str__(self):
+        return f"{self.ballot.label} - {self.label}"
+
 
 class Room(ChangeTrackModel):
     ballot = models.ForeignKey(
