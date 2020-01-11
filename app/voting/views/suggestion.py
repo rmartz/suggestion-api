@@ -1,4 +1,4 @@
-from django.db.models import Q, F, Avg, OuterRef, Subquery, FloatField
+from django.db.models import F, Avg, OuterRef, Subquery, FloatField
 from django.db.models.functions import Abs
 from rest_framework import viewsets
 from rest_framework.serializers import ValidationError
@@ -59,15 +59,20 @@ class SuggestionViewSet(viewsets.ViewSet):
         # Average the correlation value over all rows for predicates this session has not excluded
         # That is either has not voted on or has voted matching the row
         # This is equivalent to there not being a vote for the wrong polarity
-        return Avg(
-            'correlation_target__correlation',
-            filter=~Q(
-                correlation_target__predicate__uservote__session=session_token,
-                correlation_target__predicate_polarity=not F(
-                    'correlation_target__predicate__uservote__polarity'
-                )
-            )
+
+        likelihood_correlations = Subquery(
+            OptionCorrelation.objects.filter(
+                target=OuterRef('pk')
+            ).exclude(
+                predicate__uservote__session=session_token,
+                predicate_polarity=not F(
+                        'predicate__uservote__polarity'
+                    )
+            ).values('correlation')[:1],
+            output_field=FloatField()
         )
+
+        return Avg(likelihood_correlations)
 
     def get_significance_annotation(self, session_token):
         # Calculate the absolute difference in correlation of the two polarities for a given target.
@@ -91,6 +96,10 @@ class SuggestionViewSet(viewsets.ViewSet):
         correlation_change = Subquery(OptionCorrelation.objects.filter(
             predicate=OuterRef('pk'),
             predicate_polarity=True
+        ).exclude(
+            # Exclude options that the session has voted on, either as the predicate or target,
+            # since we want options that are likely to affect future votes
+            target__uservote__session=session_token
         ).annotate(
             # Next, annotate a new column called correlation_false for the same options,
             # but with polarity=False
@@ -107,12 +116,6 @@ class SuggestionViewSet(viewsets.ViewSet):
                 F('correlation')-F('correlation_false')
             )
         )[:1], output_field=FloatField())
+
         # Finally, average the absolute differences for all targets of a given predicate
-        return likelihood_score * Avg(
-            correlation_change,
-            filter=~Q(
-                # Exclude options that the session has voted on, either as the predicate or target,
-                # since we want options that are likely to affect future votes
-                correlation_predicate__target__uservote__session=session_token
-            )
-        )
+        return likelihood_score * Avg(correlation_change)
