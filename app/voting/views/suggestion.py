@@ -2,23 +2,23 @@ from django.db.models import F, Avg, OuterRef, Subquery, FloatField
 from django.db.models.functions import Abs
 from rest_framework import viewsets
 from rest_framework.serializers import ValidationError
-from rest_framework.response import Response
 
 from voting.models import BallotOption, OptionCorrelation
 from voting.serializers import SuggestionSerializer
 from .utils import get_voting_session_token
 
 
-class SuggestionViewSet(viewsets.ViewSet):
+class SuggestionViewSet(viewsets.ReadOnlyModelViewSet):
+    queryset = BallotOption.objects.all()
+    serializer_class = SuggestionSerializer
     LIKELIHOOD = 'suggest'
     SIGNIFICANCE = 'explore'
-    SUGGESTION_COUNT = 5
 
-    def list(self, request):
-        session_token = get_voting_session_token(request)
+    def get_queryset(self):
+        session_token = get_voting_session_token(self.request)
         mode = self.request.query_params.get('mode')
 
-        queryset = BallotOption.objects.filter(
+        queryset = self.queryset.filter(
             ballot__room__votingsession=session_token
         ).exclude(
             # Do not offer suggestions that have already been voted on
@@ -36,12 +36,10 @@ class SuggestionViewSet(viewsets.ViewSet):
                 uservote__session__room__votingsession=session_token
             )
 
-        data = queryset.values(
+        return queryset.values(
             'id',
             'score'
-        ).order_by('-score')[:self.SUGGESTION_COUNT]
-        serializer = SuggestionSerializer(data, many=True)
-        return Response(serializer.data)
+        ).order_by('-score')
 
     def get_score_annotation(self, mode, session_token):
         try:
