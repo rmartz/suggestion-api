@@ -9,14 +9,36 @@ class ChangeTrackModel(models.Model):
         abstract = True
 
 
+class BallotManager(models.Manager):
+    def get_by_natural_key(self, label):
+        return self.get(
+            label=label
+        )
+
+
 class Ballot(ChangeTrackModel):
-    label = models.CharField(max_length=255)
+    objects = BallotManager()
+
+    label = models.CharField(max_length=255, unique=True)
 
     def __str__(self):
         return f"{self.label}"
 
+    def natural_key(self):
+        return (self.label,)
+
+
+class BallotOptionManager(models.Manager):
+    def get_by_natural_key(self, ballot, label):
+        return self.get(
+            ballot=ballot,
+            label=label
+        )
+
 
 class BallotOption(ChangeTrackModel):
+    objects = BallotOptionManager()
+
     ballot = models.ForeignKey(
         Ballot,
         on_delete=models.CASCADE
@@ -28,6 +50,9 @@ class BallotOption(ChangeTrackModel):
 
     def __str__(self):
         return f"{self.ballot.label} - {self.label}"
+
+    def natural_key(self):
+        return (self.ballot, self.label)
 
 
 class Room(ChangeTrackModel):
