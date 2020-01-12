@@ -5,7 +5,8 @@ from .views import (
     RoomViewSet,
     VotingSessionViewSet,
     UserVoteViewSet,
-    SuggestionViewSet
+    SuggestionViewSet,
+    ConsensusViewSet
 )
 
 router = routers.DefaultRouter()
@@ -15,3 +16,4 @@ router.register(r'room', RoomViewSet)
 router.register(r'session', VotingSessionViewSet)
 router.register(r'vote', UserVoteViewSet)
 router.register(r'suggest', SuggestionViewSet, basename='suggest')
+router.register(r'picks', ConsensusViewSet, basename='consensus')
