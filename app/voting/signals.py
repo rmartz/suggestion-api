@@ -44,7 +44,11 @@ def initialize_correlations(sender, created, instance, **kwargs):
     sender=UserVote,
     dispatch_uid='update_correlations'
 )
-def update_correlations(sender, instance, **kwargs):
+def update_correlations(sender, instance, created, **kwargs):
+    if not created:
+        # Do not update correlations for already existing correlations
+        return
+
     # Use Exponential Moving Average to track correlation weights
     # EMA will keep values stable, but allow them to drift in response to changes in patterns.
     # Higher the weight, the slower it will react to changes.
