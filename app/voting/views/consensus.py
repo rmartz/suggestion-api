@@ -1,3 +1,4 @@
+from django.db.models import Count, Q
 from rest_framework import viewsets
 
 from voting.models import BallotOption
@@ -16,8 +17,11 @@ class ConsensusViewSet(viewsets.ReadOnlyModelViewSet):
             # Only show options for the ballot that this session belongs to
             ballot__room__votingsession=session_token
         ).exclude(
-            # Do not include options that have received any votes against
-            ballot__room__votingsession__uservote__polarity=False
-        ).exclude(
-            ballot__room__votingsession__uservote=None
-        ).values('id')
+            # Do not include options that have received any votes against in this room
+            uservote__polarity=False,
+            uservote__votingsession__room__votingsession=session_token
+        ).annotate(
+            count=Count(
+                'uservote',
+                filter=Q(uservote__votingsession__room__votingsession=session_token))
+        ).values('id', 'count')

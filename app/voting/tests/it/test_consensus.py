@@ -68,7 +68,7 @@ class ConsensusTests(TestCase):
         self.assertEqual(json['results'], [])
 
     def test_consensus__vote_missing__excluded(self):
-        # Exclude options that were voted for by one session but are missing a vote by another
+        """ Exclude options that were voted for by one session but are missing a vote by another """
         vote = UserVoteFactory.create(polarity=True)
         VotingSessionFactory.create(room=vote.session.room)
         url = reverse('consensus-list')
@@ -79,3 +79,49 @@ class ConsensusTests(TestCase):
         json = response.json()
         self.assertIn('results', json)
         self.assertEqual(json['results'], [])
+
+    def test_consensus__vote_for_with_unrelated_room__shows(self):
+        """A vote should be a consensus choice even with unrelated rooms."""
+        vote = UserVoteFactory.create(polarity=True)
+        VotingSessionFactory.create()
+        url = reverse('consensus-list')
+        response = self.client.get(url + f'?token={vote.session.id}')
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        json = response.json()
+        self.assertIn('results', json)
+        self.assertEqual(json['results'], [{
+            'id': vote.option.id
+        }])
+
+    def test_consensus__vote_for_with_other_room_same_ballot__shows(self):
+        """A vote should be a consensus choice even with other rooms in the same ballot."""
+        vote = UserVoteFactory.create(polarity=True)
+        VotingSessionFactory.create(room__ballot=vote.session.room.ballot)
+        url = reverse('consensus-list')
+        response = self.client.get(url + f'?token={vote.session.id}')
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        json = response.json()
+        self.assertIn('results', json)
+        self.assertEqual(json['results'], [{
+            'id': vote.option.id
+        }])
+
+    def test_consensus__vote_for_with_other_option__shows(self):
+        """A vote should be a consensus choice even with other options that are not."""
+        vote = UserVoteFactory.create(polarity=True)
+        BallotOptionFactory.create(ballot=vote.session.room.ballot)
+        VotingSessionFactory.create(room__ballot=vote.session.room.ballot)
+        url = reverse('consensus-list')
+        response = self.client.get(url + f'?token={vote.session.id}')
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        json = response.json()
+        self.assertIn('results', json)
+        self.assertEqual(json['results'], [{
+            'id': vote.option.id
+        }])
