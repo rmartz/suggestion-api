@@ -46,7 +46,7 @@ def initialize_correlations(sender, created, instance, **kwargs):
 )
 def update_correlations(sender, instance, created, **kwargs):
     if not created:
-        # Do not update correlations for already existing correlations
+        # Do not update correlations for already existing votes
         return
 
     # Use Exponential Moving Average to track correlation weights
