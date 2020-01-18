@@ -82,5 +82,6 @@ def update_correlations(sender, instance, **kwargs):
         Q(target=instance.option) | Q(predicate=instance.option)
     ).update(
         # Use Exponential Moving Average to tweak the correlation
-        correlation=(F('correlation') * EMA_WEIGHT) + (match_score * (1 - EMA_WEIGHT))
+        correlation=(F('correlation') * EMA_WEIGHT) + (match_score * (1 - EMA_WEIGHT)),
+        count=(F('count') + 1)
     )
