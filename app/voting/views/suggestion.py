@@ -91,29 +91,25 @@ class SuggestionViewSet(viewsets.ReadOnlyModelViewSet):
 
         # Build a subquery of all correlations for relevant options
         # Since we want the difference, start getting all with polarity=True
-        correlation_change = Subquery(OptionCorrelation.objects.filter(
+        correlation_change = OptionCorrelation.objects.filter(
             predicate=OuterRef('pk'),
-            predicate_polarity=True
         ).exclude(
             # Exclude options that the session has voted on, either as the predicate or target,
             # since we want options that are likely to affect future votes
             target__uservote__session=session_token
-        ).annotate(
-            # Next, annotate a new column called correlation_false for the same options,
-            # but with polarity=False
-            correlation_false=Subquery(
-                OptionCorrelation.objects.filter(
-                    predicate=OuterRef('predicate'),
-                    predicate_polarity=False,
-                    target=OuterRef('target')
-                ).values('correlation')[:1]
-            )
         ).values(
-            # Then collapse the rows to just the absolute difference up or down
-            correlation_change=Abs(
-                F('correlation')-F('correlation_false')
-            )
+            'correlation'
+        )
+
+        correlation_true = Subquery(correlation_change.filter(
+            predicate_polarity=True
+        )[:1], output_field=FloatField())
+
+        correlation_false = Subquery(correlation_change.filter(
+            predicate_polarity=False
         )[:1], output_field=FloatField())
 
         # Finally, average the absolute differences for all targets of a given predicate
-        return likelihood_score * Avg(correlation_change)
+        return likelihood_score * Avg(Abs(
+            correlation_true - correlation_false
+        ))
