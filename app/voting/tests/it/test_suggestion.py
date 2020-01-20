@@ -1,3 +1,6 @@
+from itertools import permutations
+from random import shuffle
+
 from django.test import TestCase
 from django.urls import reverse
 from django.db.models.signals import post_save
@@ -7,9 +10,9 @@ import factory
 from voting.factories import (
     BallotOptionFactory,
     VotingSessionFactory,
-    UserVoteFactory,
-    OptionCorrelationFactory
+    UserVoteFactory
 )
+from voting.models import OptionCorrelation
 
 
 class SuggestionListTests(TestCase):
@@ -190,13 +193,13 @@ class SuggestionLikelihoodTests(TestCase):
 class SuggestionSignificanceTests(TestCase):
     @staticmethod
     def create_correlations(predicate, target, negative_correlation, positive_correlation):
-        OptionCorrelationFactory.create(
+        OptionCorrelation.objects.create(
             predicate=predicate,
             predicate_polarity=True,
             target=target,
             correlation=positive_correlation
         )
-        OptionCorrelationFactory.create(
+        OptionCorrelation.objects.create(
             predicate=predicate,
             predicate_polarity=False,
             target=target,
@@ -258,7 +261,7 @@ class SuggestionSignificanceTests(TestCase):
             0.9
         )
 
-        # Create correlations that give target->predicate a even 0.5 likelihood
+        # Create correlations that give target->predicate a high 0.9 likelihood
         self.create_correlations(
             target,
             predicate,
@@ -295,7 +298,7 @@ class SuggestionSignificanceTests(TestCase):
             0.9
         )
 
-        # Create correlations that give target->predicate a even 0.5 likelihood
+        # Create correlations that give target->predicate a low 0.1 likelihood
         self.create_correlations(
             target,
             predicate,
@@ -317,3 +320,47 @@ class SuggestionSignificanceTests(TestCase):
         # but a 0.1 likelihood (Which decreases the score)
         self.assertLess(json['results'][0]['score'], 0.8)
         self.assertGreater(json['results'][0]['score'], 0)
+
+    @factory.django.mute_signals(post_save)
+    def test_exploration__multiple_correlation_records__correllated_correctly(self):
+        def build_test_correlation_pairs(ballot, count):
+            # Create multiple ballot options for the system to consider
+            options = BallotOptionFactory.create_batch(count, ballot=session.room.ballot)
+
+            # Create artificial correlations for all pairs of targets
+            target_pairs = permutations(options, 2)
+            for index, (predicate, target) in enumerate(target_pairs, start=1):
+                # Give each predicate->target pair a matching correlation for positive and negative,
+                # but one that it is different for all targets.
+                # If calculations are done with the correct pairs, despite having varying
+                #  correlations they should cancel out and have an overall significance of 0
+                correlation = 1.0 / index
+                for polarity in [True, False]:
+                    yield OptionCorrelation(
+                        predicate=predicate,
+                        predicate_polarity=polarity,
+                        target=target,
+                        correlation=correlation
+                    )
+
+        session = VotingSessionFactory.create()
+        count = 10
+
+        # Build correlations in memory and shuffle before saving to attempt to avoid database
+        # non-determinism from causing an improperly passing test.
+        correlations = list(build_test_correlation_pairs(session.room.ballot, count))
+        shuffle(correlations)
+        for obj in correlations:
+            obj.save()
+
+        url = reverse('suggest-list')
+        response = self.client.get(url + f'?token={session.id}&mode=explore')
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        json = response.json()
+        self.assertIn('results', json)
+        self.assertEqual(len(json['results']), count)
+        for suggestion in json['results']:
+            self.assertIn('score', suggestion)
+            self.assertEqual(suggestion['score'], 0)
