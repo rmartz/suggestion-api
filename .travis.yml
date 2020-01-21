@@ -18,6 +18,6 @@ script:
 
 deploy:
   provider: script
-  script: bash scripts/deploy
+  script: pip install --user awscli && bash scripts/deploy
   on:
     branch: master
