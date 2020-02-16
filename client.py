@@ -1,4 +1,5 @@
 import requests
+import random
 
 HOSTNAME = 'http://localhost:8000'
 
@@ -66,7 +67,10 @@ def get_suggestions(session):
         load_all_data('ballotoption/', {'ballot': ballot['id']})
     }
     while True:
-        data = load_data('suggest', {'token': session['id'], 'mode': 'explore'})
+        data = load_data('suggest', {
+            'token': session['id'],
+            'mode': random.choice(['explore', 'suggest'])
+        })
         yield options[
             data['results'][0]['id']
         ]
