@@ -3,7 +3,7 @@ from django.urls import reverse
 from rest_framework import status
 
 from voting.factories import UserVoteFactory, BallotOptionFactory, VotingSessionFactory
-from voting.models import UserVote
+from voting.models import UserVote, OptionCorrelation
 
 
 class UserVoteListTests(TestCase):
@@ -155,6 +155,35 @@ class UserVoteUpdateTests(TestCase):
         }, content_type='application/json')
 
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_user_vote__update__no_double_vote(self):
+        user_vote = UserVoteFactory.create(
+            polarity=True
+        )
+        predicate = UserVoteFactory.create(session=user_vote.session)
+
+        # Record what the correlation was at start
+        initial_correlation = OptionCorrelation.objects.get(
+            predicate=predicate.option,
+            predicate_polarity=predicate.polarity,
+            target=user_vote.option
+        ).correlation
+
+        # "Update" the vote to the same polarity it already had
+        url = reverse('uservote-detail', kwargs={'pk': user_vote.id})
+        self.client.patch(url + f'?token={user_vote.session.id}', {
+            'polarity': user_vote.polarity
+        }, content_type='application/json')
+
+        # The correlation score should not have increased further
+        self.assertEqual(
+            OptionCorrelation.objects.get(
+                predicate=predicate.option,
+                predicate_polarity=predicate.polarity,
+                target=user_vote.option
+            ).correlation,
+            initial_correlation
+        )
 
 
 class UserVoteDeleteTests(TestCase):

@@ -1,0 +1,21 @@
+set -e
+
+if [ -z "$AWS_ECR_ENDPOINT" ]
+then
+    echo "AWS_ECR_ENDPOINT environment variable missing"
+    exit 1
+fi;
+
+$(aws ecr get-login --no-include-email --region us-east-1)
+
+cd app/
+docker build -t suggestion-api .
+
+# Tag with `latest` as well as the current date in the UTC timezone
+# Subsequent deploys on the same date will overwrite this version
+DATE=$(date -u +'%Y-%m-%d')
+docker tag suggestion-api:latest $AWS_ECR_ENDPOINT:$DATE
+docker push $AWS_ECR_ENDPOINT:$DATE
+docker tag suggestion-api:latest $AWS_ECR_ENDPOINT:latest
+docker push $AWS_ECR_ENDPOINT:latest
+

@@ -15,3 +15,9 @@ before_install:
 
 script:
   - ./scripts/test
+
+deploy:
+  provider: script
+  script: pip install awscli && bash scripts/deploy
+  on:
+    branch: master
