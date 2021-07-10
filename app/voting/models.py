@@ -99,6 +99,7 @@ class OptionCorrelation(ChangeTrackModel):
     )
 
     correlation = models.FloatField(default=0.5)
+    count = models.IntegerField(default=0)
 
     class Meta:
         unique_together = [['predicate', 'predicate_polarity', 'target']]

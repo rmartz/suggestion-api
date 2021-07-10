@@ -107,3 +107,85 @@ class UpdateCorrelationsTests(TestCase):
             ).correlation,
             0.5
         )
+
+
+class UpdateCorrelationsCountTests(TestCase):
+    def test__vote_target__updates_counts(self):
+        predicate = UserVoteFactory.create()
+        target = UserVoteFactory.create(session=predicate.session)
+
+        self.assertEqual(
+            OptionCorrelation.objects.get(
+                predicate=predicate.option,
+                predicate_polarity=predicate.polarity,
+                target=target.option
+            ).count,
+            1
+        )
+
+    def test__vote_predicate__updates_counts(self):
+        target = UserVoteFactory.create()
+        predicate = UserVoteFactory.create(session=target.session)
+
+        self.assertEqual(
+            OptionCorrelation.objects.get(
+                predicate=predicate.option,
+                predicate_polarity=predicate.polarity,
+                target=target.option
+            ).count,
+            1
+        )
+
+    def test__vote_target_wrong_polarity__no_effect(self):
+        predicate = UserVoteFactory.create()
+        target = UserVoteFactory.create(session=predicate.session)
+
+        self.assertEqual(
+            OptionCorrelation.objects.get(
+                predicate=predicate.option,
+                predicate_polarity=not predicate.polarity,
+                target=target.option
+            ).count,
+            0
+        )
+
+    def test__vote_predicate_wrong_polarity__no_effect(self):
+        target = UserVoteFactory.create()
+        predicate = UserVoteFactory.create(session=target.session)
+
+        self.assertEqual(
+            OptionCorrelation.objects.get(
+                predicate=predicate.option,
+                predicate_polarity=not predicate.polarity,
+                target=target.option
+            ).count,
+            0
+        )
+
+    def test__vote_unrelated_target__no_effect(self):
+        target = UserVoteFactory.create()
+        predicate = UserVoteFactory.create(session=target.session)
+        unrelated = UserVoteFactory.create(session__room__ballot=target.session.room.ballot)
+
+        self.assertEqual(
+            OptionCorrelation.objects.get(
+                predicate=predicate.option,
+                predicate_polarity=predicate.polarity,
+                target=unrelated.option
+            ).count,
+            0
+        )
+
+    def test__vote_unrelated_predicate__no_effect(self):
+        target = UserVoteFactory.create()
+        UserVoteFactory.create(session=target.session)
+        unrelated = UserVoteFactory.create(session__room__ballot=target.session.room.ballot)
+
+        self.assertEqual(
+            OptionCorrelation.objects.get(
+                predicate=unrelated.option,
+                predicate_polarity=True,
+                target=target.option
+            ).count,
+            0
+        )
